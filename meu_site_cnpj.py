@@ -1,6 +1,7 @@
 import json
 import streamlit as st
 import pandas as pd
+import pandas_gbq
 from google.oauth2.credentials import Credentials
 
 # --- TRUQUE DE LOGIN PARA A NUVEM ---
@@ -198,7 +199,7 @@ if buscar:
 
     with st.spinner("Consultando a Receita Federal via BigQuery… Aguarde."):
         try:
-            df = pd.read_gbq(query, project_id=MEU_PROJETO, credentials=creds)
+            df = pandas_gbq.read_gbq(query, project_id=MEU_PROJETO, credentials=creds)
 
             if df.empty:
                 st.error(
