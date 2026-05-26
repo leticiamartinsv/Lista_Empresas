@@ -1,6 +1,16 @@
+import json
 import streamlit as st
-import basedosdados as bd
 import pandas as pd
+from google.oauth2.credentials import Credentials
+
+# --- TRUQUE DE LOGIN PARA A NUVEM ---
+creds = None
+if "gcp_service_account" in st.secrets:
+    # Lê o texto do crachá que está no Streamlit Secrets
+    info = json.loads(st.secrets["gcp_service_account"])
+    # Força a criação do crachá na memória (sem tentar abrir navegador)
+    creds = Credentials.from_authorized_user_info(info)
+# ------------------------------------
 
 # ─── Configuração ────────────────────────────────────────────────────────────
 MEU_PROJETO = "pivotal-sprite-497420-n9"
