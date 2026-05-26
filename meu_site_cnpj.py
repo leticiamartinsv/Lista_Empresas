@@ -198,7 +198,7 @@ if buscar:
 
     with st.spinner("Consultando a Receita Federal via BigQuery… Aguarde."):
         try:
-            df = bd.read_sql(query, billing_project_id=MEU_PROJETO)
+            df = pd.read_gbq(query, project_id=MEU_PROJETO, credentials=creds)
 
             if df.empty:
                 st.error(
