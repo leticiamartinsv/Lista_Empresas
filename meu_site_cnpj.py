@@ -14,7 +14,7 @@ if "gcp_service_account" in st.secrets:
 # ------------------------------------
 
 # ─── Configuração ────────────────────────────────────────────────────────────
-MEU_PROJETO = "pivotal-sprite-497420-n9"
+MEU_PROJETO = "project-39977f6a-4a0c-4879-ae4"
 
 st.set_page_config(page_title="Gerador de Leads | RFB", layout="wide")
 st.title("Plataforma de Inteligência de Mercado")
