@@ -40,40 +40,45 @@ TIPO_UNIDADE = {
     "Apenas Matrizes": 1,
     "Apenas Filiais": 2,
 }
-
+# ─── Função de Busca com Cache ───────────────────────────────────────────────
+@st.cache_data(ttl=86400) # Guarda o resultado por 24 horas para não pagar de novo
+def buscar_dados_no_google(query_sql):
+    return pandas_gbq.read_gbq(query_sql, project_id=MEU_PROJETO, credentials=creds)
 # ─── Barra lateral com filtros ───────────────────────────────────────────────
 with st.sidebar:
     st.header("Filtros de Busca")
+    
+    # Criamos o formulário aqui:
+    with st.form("form_filtros"):
+        # Localização
+        st.subheader("Localização")
+        estado = st.selectbox("Estado (UF)", TODOS_OS_ESTADOS, index=TODOS_OS_ESTADOS.index("SP"))
+        municipio_input = st.text_input("Município (opcional)", placeholder="ex: RECIFE")
 
-    # Localização
-    st.subheader("Localização")
-    estado = st.selectbox("Estado (UF)", TODOS_OS_ESTADOS, index=TODOS_OS_ESTADOS.index("SP"))
-    municipio_input = st.text_input("Município (opcional)", placeholder="ex: RECIFE")
+        # Atividade
+        st.subheader("Atividade")
+        cnae_input = st.text_input(
+            "CNAE Principal (obrigatório)",
+            placeholder="ex: 5611201 — Restaurantes e similares",
+        )
+        cnae_secundario = st.text_input(
+            "CNAE Secundário (opcional)",
+            placeholder="ex: 4711301",
+        )
 
-    # Atividade
-    st.subheader("Atividade")
-    cnae_input = st.text_input(
-        "CNAE Principal (obrigatório)",
-        placeholder="ex: 5611201 — Restaurantes e similares",
-    )
-    cnae_secundario = st.text_input(
-        "CNAE Secundário (opcional)",
-        placeholder="ex: 4711301",
-    )
+        # Empresa
+        st.subheader("Perfil da Empresa")
+        porte = st.selectbox("Porte", list(PORTES.keys()))
+        tipo_unidade = st.selectbox("Tipo de Unidade", list(TIPO_UNIDADE.keys()))
 
-    # Empresa
-    st.subheader("Perfil da Empresa")
-    porte = st.selectbox("Porte", list(PORTES.keys()))
-    tipo_unidade = st.selectbox("Tipo de Unidade", list(TIPO_UNIDADE.keys()))
+        # Contato
+        st.subheader(" Contato")
+        apenas_com_email = st.checkbox("Apenas com e-mail cadastrado")
+        apenas_com_telefone = st.checkbox("Apenas com telefone cadastrado")
 
-    # Contato
-    st.subheader(" Contato")
-    apenas_com_email = st.checkbox("Apenas com e-mail cadastrado")
-    apenas_com_telefone = st.checkbox("Apenas com telefone cadastrado")
-
-   # Volume
-    st.subheader("Volume")
-    limite = st.slider("Máximo de registros", 500, 500000, 5000, step=500)
+       # Volume
+        st.subheader("Volume")
+        limite = st.slider("Máximo de registros", 500, 500000, 5000, step=500)
 
     buscar = st.button( "Buscar Empresas", use_container_width=True, type="primary", shortcut="Enter" )
 
@@ -199,7 +204,8 @@ if buscar:
 
     with st.spinner("Consultando a Receita Federal via BigQuery… Aguarde."):
         try:
-            df = pandas_gbq.read_gbq(query, project_id=MEU_PROJETO, credentials=creds)
+            # Chama a função com cache em vez de ir direto no Google
+            df = buscar_dados_no_google(query)
 
             if df.empty:
                 st.error(
