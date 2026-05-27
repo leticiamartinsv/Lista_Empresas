@@ -80,7 +80,7 @@ with st.sidebar:
         st.subheader("Volume")
         limite = st.slider("Máximo de registros", 500, 500000, 5000, step=500)
 
-        buscar = st.button( "Buscar Empresas", use_container_width=True, type="primary", shortcut="Enter" )
+        buscar = st.form_submit_button("Buscar Empresas", use_container_width=True, type="primary")
 
 # ─── Lógica de busca ─────────────────────────────────────────────────────────
 if buscar:
