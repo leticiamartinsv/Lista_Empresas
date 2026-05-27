@@ -16,9 +16,9 @@ if "gcp_service_account" in st.secrets:
 # ─── Configuração ────────────────────────────────────────────────────────────
 MEU_PROJETO = "project-39977f6a-4a0c-4879-ae4"
 
-st.set_page_config(page_title="Gerador de Leads | RFB", layout="wide")
-st.title("Plataforma de Inteligência de Mercado")
-st.caption("Dados da Receita Federal via Base dos Dados · Empresas ativas no Brasil")
+st.set_page_config(page_title="Lista de empresas", layout="wide")
+st.title("Lista de Empresas | Brasil")
+st.caption("Dados da Receita Federal via Base dos Dados · Empresas ativas no Brasil · Atualizado até 11/2025")
 
 # ─── Constantes ──────────────────────────────────────────────────────────────
 TODOS_OS_ESTADOS = [
