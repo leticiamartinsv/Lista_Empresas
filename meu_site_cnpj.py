@@ -3,6 +3,8 @@ import streamlit as st
 import pandas as pd
 import pandas_gbq
 from google.oauth2.credentials import Credentials
+import requests  
+import time      
 
 # --- TRUQUE DE LOGIN PARA A NUVEM ---
 creds = None
@@ -79,8 +81,58 @@ with st.sidebar:
        # Volume
         st.subheader("Volume")
         limite = st.slider("Máximo de registros", 500, 500000, 5000, step=500)
-
+        
+        # Validação RFB:
+        validar_api = st.checkbox("Verificar na Receita Federal em tempo real (Limpa inativos, mas demora mais)")
+        
         buscar = st.form_submit_button("Buscar Empresas", use_container_width=True, type="primary")
+        
+# ─── Função de Validação BrasilAPI (SEM LIMITE - CHECA TUDO) ─────────────────
+def limpar_base_com_brasilapi(df_sujo):
+    df_alvo = df_sujo.copy()
+    total = len(df_alvo)
+    
+    st.info(f"Iniciando a checagem em tempo real de TODAS as {total} empresas na Receita Federal...")
+    
+    # Calcula o tempo estimado (cerca de 0.35 segundos por CNPJ)
+    tempo_estimado_minutos = round((total * 0.35) / 60, 1)
+    
+    if tempo_estimado_minutos < 1:
+        st.warning(f"⏱️ Tempo estimado de espera: menos de 1 minuto. Por favor, não feche a página.")
+    else:
+        st.warning(f"⏱️ Tempo estimado de espera: cerca de {tempo_estimado_minutos} minutos. Deixe esta aba aberta até o fim.")
+
+    cnpjs_vivos = []
+    
+    # Cria a barra de progresso visual
+    barra = st.progress(0, text=f"Inspecionando 0 de {total} empresas...")
+
+    for i, row in df_alvo.iterrows():
+        cnpj_limpo = str(row['cnpj']).replace(".", "").replace("/", "").replace("-", "")
+        
+        try:
+            url = f"https://brasilapi.com.br/api/cnpj/v1/{cnpj_limpo}"
+            resposta = requests.get(url, timeout=5)
+            
+            if resposta.status_code == 200:
+                dados = resposta.json()
+                # Se na Receita Federal hoje estiver ATIVA, vai para a lista VIP
+                if dados.get("descricao_situacao_cadastral") == "ATIVA":
+                    cnpjs_vivos.append(row['cnpj'])
+        except:
+            pass # Se a API falhar em um CNPJ, pula para o próximo sem quebrar o site
+            
+        # O INTERVALO QUE VOCÊ PEDIU: Pausa de 0.35 segundos antes de consultar o próximo
+        time.sleep(0.35)
+        
+        # Atualiza a barra de progresso na tela
+        barra.progress((i + 1) / total, text=f"Inspecionando {i + 1} de {total} empresas...")
+
+    barra.empty() # Apaga a barra quando terminar
+    
+    # Filtra a tabela final trazendo apenas as confirmadas
+    df_cristalino = df_alvo[df_alvo['cnpj'].isin(cnpjs_vivos)]
+    return df_cristalino
 
 # ─── Lógica de busca ─────────────────────────────────────────────────────────
 if buscar:
@@ -231,7 +283,13 @@ if buscar:
                     df["uf"].nunique() if "uf" in df.columns else "–",
                 )
 
-                st.success(f"✅ {len(df):,} empresas carregadas!")
+               st.success(f"✅ {len(df):,} empresas carregadas rapidamente da nuvem!")
+
+                # --- O NOVO BLOCO ENTRA AQUI ---
+                if validar_api:
+                    df = limpar_base_com_brasilapi(df)
+                    st.success(f"🎯 Limpeza concluída! Restaram {len(df):,} empresas 100% ATIVAS e confirmadas agora.")
+                # -------------------------------
 
                 # ── Tabela interativa (Mostra só as 100 primeiras para não travar) ──
                 st.caption("Visualizando as 100 primeiras empresas (Baixe o CSV para ver todas)")
