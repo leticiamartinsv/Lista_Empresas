@@ -137,7 +137,7 @@ if buscar:
             ANY_VALUE(razao_social)   AS razao_social,
             ANY_VALUE(porte)          AS porte,
             ANY_VALUE(capital_social) AS capital_social
-        FROM `basedosdados.br_rfb_cnpj.empresas`
+        FROM `basedosdados.br_me_cnpj.empresas`
         GROUP BY cnpj_basico
     ),
     -- ► Subquery mun: garante 1 linha por id_municipio_rf (evita fan-out na tabela de municípios)
@@ -182,7 +182,7 @@ if buscar:
         e.email                                           AS email,
         emp.capital_social                                AS capital_social,
         e.data_inicio_atividade
-    FROM `basedosdados.br_rfb_cnpj.empresas` e
+    FROM `basedosdados.br_me_cnpj.empresas` e
     LEFT JOIN emp
            ON e.cnpj_basico = emp.cnpj_basico
     LEFT JOIN mun
