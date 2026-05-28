@@ -130,7 +130,7 @@ if buscar:
     #   br_rfb_cnpj.empresas          → razão social, porte, capital
     #   br_bd_diretorios_brasil.municipio → nome do município
     query = f"""
-    -- ► Subquery emp: garante 1 linha por cnpj_basico (evita fan-out na tabela de empresas)
+    -- ► Subquery emp: garante 1 linha por cnpj_basico
     WITH emp AS (
         SELECT
             cnpj_basico,
@@ -140,53 +140,53 @@ if buscar:
         FROM `basedosdados.br_me_cnpj.empresas`
         GROUP BY cnpj_basico
     ),
-    -- ► Subquery mun: garante 1 linha por id_municipio_rf (evita fan-out na tabela de municípios)
+    -- ► Subquery mun: Usa o id_municipio padrão da Base dos Dados
     mun AS (
         SELECT
-            CAST(id_municipio_rf AS STRING) AS id_mun,
-            ANY_VALUE(nome)                 AS nome
+            CAST(id_municipio AS STRING) AS id_mun,
+            ANY_VALUE(nome)              AS nome
         FROM `basedosdados.br_bd_diretorios_brasil.municipio`
-        GROUP BY id_municipio_rf
+        GROUP BY id_municipio
     )
 
     SELECT
         CONCAT(e.cnpj_basico, e.cnpj_ordem, e.cnpj_dv)  AS cnpj,
         emp.razao_social,
         e.nome_fantasia,
-        e.cnae_fiscal_principal                           AS cnae_principal,
+        e.cnae_fiscal_principal                         AS cnae_principal,
         CASE emp.porte
             WHEN '0' THEN 'Não informado'
             WHEN '1' THEN 'Microempresa'
             WHEN '3' THEN 'Pequeno Porte'
             WHEN '5' THEN 'Demais'
             ELSE COALESCE(CAST(emp.porte AS STRING), '?')
-        END                                               AS porte,
+        END                                             AS porte,
         CASE e.identificador_matriz_filial
             WHEN '1' THEN 'Matriz'
             WHEN '2' THEN 'Filial'
             ELSE '?'
-        END                                               AS tipo_unidade,
+        END                                             AS tipo_unidade,
         CONCAT(
             COALESCE(e.tipo_logradouro, ''), ' ',
             COALESCE(e.logradouro, ''), ', ',
             COALESCE(e.numero, 'S/N')
-        )                                                 AS endereco,
+        )                                               AS endereco,
         e.bairro,
-        mun.nome                                          AS municipio,
-        e.sigla_uf                                        AS uf,
+        mun.nome                                        AS municipio,
+        e.sigla_uf                                      AS uf,
         e.cep,
         CONCAT(
             COALESCE(e.ddd_1, ''), ' ',
             COALESCE(e.telefone_1, '')
-        )                                                 AS telefone,
-        e.email                                           AS email,
-        emp.capital_social                                AS capital_social,
+        )                                               AS telefone,
+        e.email                                         AS email,
+        emp.capital_social                              AS capital_social,
         e.data_inicio_atividade
-    FROM `basedosdados.br_me_cnpj.empresas` e
+    FROM `basedosdados.br_me_cnpj.estabelecimentos` e
     LEFT JOIN emp
            ON e.cnpj_basico = emp.cnpj_basico
     LEFT JOIN mun
-           ON CAST(e.id_municipio_rf AS STRING) = mun.id_mun
+           ON CAST(e.id_municipio AS STRING) = mun.id_mun
     WHERE {where_clause}
     -- Elimina o histórico duplicado, priorizando a linha com nome fantasia e telefone preenchidos
     QUALIFY ROW_NUMBER() OVER(
