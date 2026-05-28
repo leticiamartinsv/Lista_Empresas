@@ -283,7 +283,7 @@ if buscar:
                     df["uf"].nunique() if "uf" in df.columns else "–",
                 )
 
-               st.success(f"✅ {len(df):,} empresas carregadas rapidamente da nuvem!")
+              st.success(f"✅ {len(df):,} empresas carregadas rapidamente da nuvem!")
 
                 # --- O NOVO BLOCO ENTRA AQUI ---
                 if validar_api:
