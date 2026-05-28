@@ -87,25 +87,17 @@ with st.sidebar:
         
         buscar = st.form_submit_button("Buscar Empresas", use_container_width=True, type="primary")
         
-# ─── Função de Validação BrasilAPI (SEM LIMITE - CHECA TUDO) ─────────────────
+# ─── Função de Validação Avançada BrasilAPI ──────────────────────────────────
 def limpar_base_com_brasilapi(df_sujo):
     df_alvo = df_sujo.copy()
     total = len(df_alvo)
     
-    st.info(f"Iniciando a checagem em tempo real de TODAS as {total} empresas na Receita Federal...")
-    
-    # Calcula o tempo estimado (cerca de 0.35 segundos por CNPJ)
-    tempo_estimado_minutos = round((total * 0.35) / 60, 1)
-    
-    if tempo_estimado_minutos < 1:
-        st.warning(f"⏱️ Tempo estimado de espera: menos de 1 minuto. Por favor, não feche a página.")
-    else:
-        st.warning(f"⏱️ Tempo estimado de espera: cerca de {tempo_estimado_minutos} minutos. Deixe esta aba aberta até o fim.")
+    st.info(f"A realizar filtragem final em tempo real de {total} empresas na Receita Federal...")
 
-    cnpjs_vivos = []
+    linhas_validas = []
     
-    # Cria a barra de progresso visual
-    barra = st.progress(0, text=f"Inspecionando 0 de {total} empresas...")
+    # Barra de progresso visual
+    barra = st.progress(0, text=f"A inspecionar 0 de {total} empresas...")
 
     for i, row in df_alvo.iterrows():
         cnpj_limpo = str(row['cnpj']).replace(".", "").replace("/", "").replace("-", "")
@@ -116,22 +108,42 @@ def limpar_base_com_brasilapi(df_sujo):
             
             if resposta.status_code == 200:
                 dados = resposta.json()
-                # Se na Receita Federal hoje estiver ATIVA, vai para a lista VIP
+                
+                # 1. VERIFICAÇÃO DE SITUAÇÃO
                 if dados.get("descricao_situacao_cadastral") == "ATIVA":
-                    cnpjs_vivos.append(row['cnpj'])
+                    
+                    # 2. VERIFICAÇÃO DO PORTE EM TEMPO REAL (Evita empresas que cresceram)
+                    # Mapeamento de portes da BrasilAPI (normalmente texto ou código)
+                    porte_atual = dados.get("porte", "")
+                    
+                    # Atualiza o formato do porte na linha para o utilizador ver o dado real de hoje
+                    if porte_atual == 1 or "MICRO" in str(porte_atual).upper():
+                        row['porte'] = "Microempresa"
+                        linhas_validas.append(row)
+                    elif porte_atual == 3 or "PEQUENO" in str(porte_atual).upper():
+                        row['porte'] = "Pequeno Porte"
+                        linhas_validas.append(row)
+                    elif porte_atual == 5 or "DEMAIS" in str(porte_atual).upper():
+                        row['porte'] = "Demais"
+                        # Se o utilizador filtrou por ME/EPP na barra lateral, ignoramos esta que cresceu
+                        if porte == "Todos":
+                            linhas_validas.append(row)
+                    else:
+                        if porte == "Todos":
+                            linhas_validas.append(row)
         except:
-            pass # Se a API falhar em um CNPJ, pula para o próximo sem quebrar o site
+            pass
             
-        # O INTERVALO QUE VOCÊ PEDIU: Pausa de 0.35 segundos antes de consultar o próximo
         time.sleep(0.35)
-        
-        # Atualiza a barra de progresso na tela
-        barra.progress((i + 1) / total, text=f"Inspecionando {i + 1} de {total} empresas...")
+        barra.progress((i + 1) / total, text=f"A inspecionar {i + 1} de {total} empresas...")
 
-    barra.empty() # Apaga a barra quando terminar
+    barra.empty()
     
-    # Filtra a tabela final trazendo apenas as confirmadas
-    df_cristalino = df_alvo[df_alvo['cnpj'].isin(cnpjs_vivos)]
+    # Se nenhuma empresa passar no filtro real, devolve um DataFrame vazio estruturado
+    if not linhas_validas:
+        return pd.DataFrame(columns=df_alvo.columns)
+        
+    df_cristalino = pd.DataFrame(linhas_validas)
     return df_cristalino
 
 # ─── Lógica de busca ─────────────────────────────────────────────────────────
