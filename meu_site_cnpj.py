@@ -283,8 +283,6 @@ if buscar:
                     df["uf"].nunique() if "uf" in df.columns else "–",
                 )
 
-              st.success(f"✅ {len(df):,} empresas carregadas rapidamente da nuvem!")
-
                 # --- O NOVO BLOCO ENTRA AQUI ---
                 if validar_api:
                     df = limpar_base_com_brasilapi(df)
