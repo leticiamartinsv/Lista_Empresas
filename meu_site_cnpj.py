@@ -92,7 +92,7 @@ if buscar:
 
     # Monta filtros WHERE dinamicamente
     filtros = [
-        "e.situacao_cadastral = '2'",                              # somente ATIVAS (integer!)
+        "CAST(e.situacao_cadastral AS STRING) IN ('2', '02')",     # Garante apenas ATIVAS,                              
         f"CAST(e.cnae_fiscal_principal AS STRING) LIKE '%{cnae_clean}%'",
     ]
 
@@ -137,7 +137,7 @@ if buscar:
             ANY_VALUE(razao_social)   AS razao_social,
             ANY_VALUE(porte)          AS porte,
             ANY_VALUE(capital_social) AS capital_social
-        FROM `basedosdados.br_me_cnpj.empresas`
+        FROM `basedosdados.br_rfb_cnpj.empresas`
         GROUP BY cnpj_basico
     ),
     -- ► Subquery mun: garante 1 linha por id_municipio_rf (evita fan-out na tabela de municípios)
@@ -182,7 +182,7 @@ if buscar:
         e.email                                           AS email,
         emp.capital_social                                AS capital_social,
         e.data_inicio_atividade
-    FROM `basedosdados.br_me_cnpj.estabelecimentos` e
+    FROM `basedosdados.br_rfb_cnpj.empresas` e
     LEFT JOIN emp
            ON e.cnpj_basico = emp.cnpj_basico
     LEFT JOIN mun
